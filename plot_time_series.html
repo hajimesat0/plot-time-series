@@ -1,0 +1,136 @@
+<!DOCTYPE HTML>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-AMS_CHTML"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/4.3.0/math.min.js"></script>
+</head>
+
+<body>
+    <form name="form">
+        <div id="dropZone" style="border: gray solid 1em; padding: 1em; height:100px; width:200px;">
+            csv形式の時系列データファイルをドロップしてください。
+        </div>
+        <div id="plt_OUT1" style="height:600px; width:1200px"></div>
+        <div id="plt_OUT2" style="height:600px; width:1200px"></div>
+        <div id="plt_OUT3" style="height:600px; width:1200px"></div>
+        <div id="plt_OUT4" style="height:600px; width:1200px"></div>
+        <div id="plt_OUT5" style="height:600px; width:1200px"></div>
+        <div id="plt_OUT6" style="height:600px; width:1200px"></div>
+        <div id="plt_OUT7" style="height:600px; width:1200px"></div>
+        <div id="plt_OUT8" style="height:600px; width:1200px"></div>
+
+        <!-- Plotly chart will be drawn inside this DIV -->
+        </div>
+    </form>
+
+
+    <script>
+        let headerRow = 1;
+
+        let dropZone = document.getElementById('dropZone');
+        dropZone.addEventListener('dragover', handleDragOver, false);
+        dropZone.addEventListener('drop', handleFileSelect, false);
+
+        function handleDragOver(evt) {
+            evt.stopPropagation();
+            evt.preventDefault();
+            evt.dataTransfer.dropEffect = 'copy';
+        }
+
+        function handleFileSelect(evt) {
+            evt.stopPropagation();
+            evt.preventDefault();
+
+            let files = evt.dataTransfer.files;
+
+            if (files.length > 1) {
+                alert('1ファイルだけにしてください');
+                return;
+            }
+
+            file = files[0];
+            if (!file.name.match('.csv$')) {
+                alert('csvファイルを選択してください');
+                return;
+            }
+
+            let reader = new FileReader();
+            reader.onload = on_file_load;
+            reader.readAsText(file, 'shift-jis');
+        }
+
+        function on_file_load( event ) {
+            let rows = event.target.result.split('\r\n');
+            let csvData = [];
+
+            // headerの取得
+            let header = [];
+            let headerLineData = [];
+            let lineData = [];
+            headerLineData = rows[headerRow-1].split(',');
+            for (let j = 0; j < headerLineData.length; j++) {
+                csvData[headerLineData[j]] = [];
+            }
+
+            for (let i = headerRow; i < rows.length; i++) {
+                lineData = rows[i].split(',');
+                for (let j = 0; j < lineData.length; j++) {
+                    csvData[headerLineData[j]].push(lineData[j]);
+                }
+            }
+
+            let time = csvData['時間[s]'];
+            let logCount = time.length;
+
+            // グラフ化
+            add_plot(time, csvData, headerLineData, 'データ1,2,3', ['データ1','データ2','データ3'], 'plt_OUT1');
+            add_plot(time, csvData, headerLineData, 'データ1', ['データ1'], 'plt_OUT2');
+            add_plot(time, csvData, headerLineData, 'データ2', ['データ2'], 'plt_OUT3');
+            add_plot(time, csvData, headerLineData, 'データ3', ['データ3'], 'plt_OUT4');
+            // add_plot(time, csvData, headerLineData, 'OUT5', ['OUT5'], 'plt_OUT5');
+            // add_plot(time, csvData, headerLineData, 'OUT6', ['OUT6'], 'plt_OUT6');
+            // add_plot(time, csvData, headerLineData, 'OUT7', ['OUT7'], 'plt_OUT7');
+            // add_plot(time, csvData, headerLineData, 'OUT8', ['OUT8'], 'plt_OUT8');
+
+        }
+
+        function add_plot(time, csvData, header_line_data, title, headers, div_plot) {
+            let trace = [];
+            for ( let i=0; i<headers.length; i++ ) {
+                trace[headers[i]] = {
+                            x: time,
+                            type: 'scatter',
+                            visible: true,
+                            name: headers[i],
+                            y: csvData[headers[i]]
+                        };
+            }
+
+            let layout = {
+                title: title + ' in ' + file.name,
+                hovermode: false,
+                xaxis: {
+                    title: '時間[s]',
+                    autorange: true,
+                    anchor: 'y'
+                },
+                autosize: true,
+                height: null,
+                width: null,
+                showlegend: true
+            };
+
+            let plot_data = [];
+            for (key in trace) {
+                plot_data.push(trace[key])
+            }
+            Plotly.newPlot(div_plot, plot_data, layout);
+        }
+
+    </script>
+</body>
+
+</html>
